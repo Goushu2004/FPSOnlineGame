@@ -1,0 +1,36 @@
+# Unity 临时文件和缓存
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# 内存 dump 文件
+*.stackdump
+
+# 自动生成的文件
+[Ss]ysinfo.txt
+*.pid
+*.suo
+*.user
+*.userprefs
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pid
+*.boop
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# 操作系统缓存
+.DS_Store
+Thumbs.db
