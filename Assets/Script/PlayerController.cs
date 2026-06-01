@@ -1,63 +1,87 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.XR;
-using static UnityEditor.Searcher.SearcherWindow.Alignment;
+using UnityEngine.UIElements;
+
 public class PlayerController : MonoBehaviour
 {
+    // 组件引用
     private Rigidbody rb;
-    private float horizontalInput;
-    private float verticalInput;
-    Vector3 velocity;
-    private float moveSpeed = 2f;
     private Animator playerAnimator;
     public GameObject playerPosition;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public GameObject playerCamera;
+    public GameObject cameraFollow;
+
+    // 输入变量
+    private float horizontalInput;
+    private float verticalInput;
+
+    // 用来平滑输入的新变量
+    private float smoothX;
+    private float smoothZ;
+    private float currentVelocityX;
+    private float currentVelocityZ;
+    private Vector3 currentVelocity;
+    public float smoothTime = 0.15f;
+
+
+    // 控制变量
+    private float moveSpeed = 2f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         playerAnimator = GetComponent<Animator>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        SetAnimatorParameters();
+        smoothX = Mathf.SmoothDamp(smoothX, horizontalInput, ref currentVelocityX, smoothTime);
+        smoothZ = Mathf.SmoothDamp(smoothZ, verticalInput, ref currentVelocityZ, smoothTime);
+        playerCamera.transform.position = Vector3.SmoothDamp(playerCamera.transform.position, cameraFollow.transform.position, ref currentVelocity, smoothTime);
+        playerAnimator.SetFloat("VelocityX", smoothX);
+        playerAnimator.SetFloat("VelocityZ", smoothZ);
     }
+
     private void FixedUpdate()
     {
         Vector3 moveDirection = (playerPosition.transform.forward * verticalInput + playerPosition.transform.right * horizontalInput).normalized;
-        velocity = moveDirection * moveSpeed;
-        rb.linearVelocity = new Vector3(velocity.x, rb.linearVelocity.y, velocity.z);
+        rb.linearVelocity = new Vector3(moveDirection.x * moveSpeed, rb.linearVelocity.y, moveDirection.z * moveSpeed);
     }
-    public void OnMove(InputAction.CallbackContext context) 
+
+    public void OnMove(InputAction.CallbackContext context)
     {
-        if (context.performed)
-        {
-            Vector2 input = context.ReadValue<Vector2>();
-            horizontalInput = input.x;
-            verticalInput = input.y;
-        }
-        else if (context.canceled)
-        {
-            horizontalInput = 0f;
-            verticalInput = 0f;
-        }
+        Vector2 input = context.ReadValue<Vector2>();
+        horizontalInput = input.x;
+        verticalInput = input.y;
     }
     public void OnCourch(InputAction.CallbackContext context) 
     {
         if (context.performed)
         {
-            playerAnimator.SetBool("IsCourching", true);
-        }
-        else if (context.canceled)
-        {
-            playerAnimator.SetBool("IsCourching", false);
+            // 如果已经处于下蹲动画
+            if (playerAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Crouch"))
+            {
+                playerAnimator.SetBool("IsCourching", false);
+            }
+            //  不处于下蹲动画
+            else 
+            {
+                playerAnimator.SetBool("IsCourching", true);
+            }
         }
     }
-    public void SetAnimatorParameters() 
+    public void OnSlash(InputAction.CallbackContext context) 
     {
-        playerAnimator.SetFloat("VelocityX", horizontalInput);
-        playerAnimator.SetFloat("VelocityZ", verticalInput);
+        if (context.performed) 
+        {
+            if (playerAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Slash"))
+            {
+                return;
+            }
+            else
+            {
+                playerAnimator.SetTrigger("Slash_trigger");
+            }
+        }
     }
 }
