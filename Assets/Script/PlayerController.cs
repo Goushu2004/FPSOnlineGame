@@ -26,7 +26,7 @@ public class PlayerController : MonoBehaviour
 
     // 控制变量
     private float moveSpeed = 2f;
-
+    private bool isRunning = false;
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -35,6 +35,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        Debug.Log("Horizontal: " + horizontalInput + ", Vertical: " + verticalInput);
         smoothX = Mathf.SmoothDamp(smoothX, horizontalInput, ref currentVelocityX, smoothTime);
         smoothZ = Mathf.SmoothDamp(smoothZ, verticalInput, ref currentVelocityZ, smoothTime);
         playerCamera.transform.position = Vector3.SmoothDamp(playerCamera.transform.position, cameraFollow.transform.position, ref currentVelocity, smoothTime);
@@ -51,8 +52,30 @@ public class PlayerController : MonoBehaviour
     public void OnMove(InputAction.CallbackContext context)
     {
         Vector2 input = context.ReadValue<Vector2>();
-        horizontalInput = input.x;
-        verticalInput = input.y;
+        if (isRunning) 
+        {
+            horizontalInput = input.x * 1.5f;
+            verticalInput = input.y * 1.5f;
+        }
+        else if(!isRunning)
+        {
+            horizontalInput = input.x;
+            verticalInput = input.y;    
+        }
+    }
+    public void OnRun(InputAction.CallbackContext context) 
+    {
+        if (context.performed) 
+        {
+            if (isRunning == true) 
+            {
+                isRunning = false;
+            }
+            else
+            {
+                isRunning = true;
+            }
+        }
     }
     public void OnCourch(InputAction.CallbackContext context) 
     {
