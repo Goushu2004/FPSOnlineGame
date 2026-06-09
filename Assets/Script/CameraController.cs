@@ -1,24 +1,35 @@
-using System.Collections;
 using UnityEngine;
+using Unity.Netcode;
+using Cinemachine;
 
 public class CameraController : MonoBehaviour
 {
-    public Camera playerCamera;
-    public GameObject cameraFollowPosition;
+
+    [SerializeField] private CinemachineVirtualCamera virtualCamera;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-
+       
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        
     }
     private void LateUpdate()
     {
-        //相机跟随玩家水平高度
-        playerCamera.transform.position = new Vector3(playerCamera.transform.position.x, cameraFollowPosition.transform.position.y, playerCamera.transform.position.z);
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) { return; }
+        if (virtualCamera == null) { return; }
+        NetworkObject localPlayerObject = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject();
+        if (localPlayerObject != null)
+        {
+            var playerController = localPlayerObject.GetComponent<PlayerController>();
+            if (playerController != null) 
+            {
+                virtualCamera.Follow = playerController.cameraFollowPoint.transform;
+                virtualCamera.LookAt = playerController.cameraFollowPoint.transform;
+            }
+        }
     }
 }

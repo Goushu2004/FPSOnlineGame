@@ -1,14 +1,13 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UIElements;
-using UnityEngine.Windows;
-
-public class PlayerController : MonoBehaviour
+using Unity.Netcode;
+public class PlayerController : NetworkBehaviour
 {
     // 组件引用
     private Rigidbody rb;
     private Animator playerAnimator;
-    public GameObject playerCamera;
+    private Camera mainCamera;
+    public GameObject cameraFollowPoint;
 
     // 输入变量
     private Vector2 rawInput;
@@ -35,11 +34,21 @@ public class PlayerController : MonoBehaviour
     public GameObject groundCheckPoint;
     private float groundCheckDistance = 0.1f;
     public LayerMask groundLayer;
+
+    //控制射击变量
+    private bool isShootRaycast;
+    private float fireRate = 10.0f;
+    private float nextFireTime = 0f;
+
+    //枪口焰粒子特效变量
+    public ParticleSystem gunFirePrefab;
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         playerAnimator = GetComponent<Animator>();
+        mainCamera = Camera.main;
         nowState = PlayerMovingState.Walking;
+        //gunFirePrefab.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     void Update()
@@ -48,7 +57,13 @@ public class PlayerController : MonoBehaviour
         CalculateMovementSpeed();
 
         //判断是否着地
-        isGrounded = Physics.CheckSphere(groundCheckPoint.transform.position, groundCheckDistance, groundLayer);    
+        isGrounded = Physics.CheckSphere(groundCheckPoint.transform.position, groundCheckDistance, groundLayer);
+
+        //开火射线检测
+        if (isShootRaycast && Time.time >= nextFireTime) 
+        {
+            ShootRaycast();
+        }
 
         // 设置输入延迟，帮助混合树动画过渡
         smoothX = Mathf.SmoothDamp(smoothX, horizontalSpeed, ref currentVelocityX, smoothTime);
@@ -107,6 +122,19 @@ public class PlayerController : MonoBehaviour
             }
         }
     }
+    public void OnFire(InputAction.CallbackContext context) 
+    {
+        if (context.performed)
+        {
+            playerAnimator.SetBool("IsFiring", true);
+            isShootRaycast = true;
+        }
+        else if(context.canceled)
+        {
+            playerAnimator.SetBool("IsFiring", false);
+            isShootRaycast = false;
+        }
+    }
     private void CalculateMovementSpeed() 
     {
         if (nowState == PlayerMovingState.Running)
@@ -123,6 +151,30 @@ public class PlayerController : MonoBehaviour
         {
             horizontalSpeed = rawInput.x * 0.7f;
             verticalSpeed = rawInput.y * 0.7f;
+        }
+        //射击时减少移速
+        if (playerAnimator.GetBool("IsFiring"))
+        {
+            horizontalSpeed *= 0.7f;
+            verticalSpeed *= 0.7f;
+        }
+    }
+    public void ShootRaycast() 
+    {
+        //计算下一次射击检测时间
+        nextFireTime = Time.time + (1f / fireRate);
+        //刷新枪口焰粒子特效
+        if (gunFirePrefab != null) 
+        {
+            gunFirePrefab.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            gunFirePrefab.Play(true);
+        }
+        Vector3 rayOrigin = mainCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0f));
+        Vector3 rayDirection = mainCamera.transform.forward;
+        RaycastHit hit;
+        if(Physics.Raycast(rayOrigin, rayDirection, out hit))
+        {
+            // 处理射击命中逻辑
         }
     }
 }
