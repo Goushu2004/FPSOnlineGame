@@ -16,7 +16,7 @@ public class PlayerController : NetworkBehaviour
     private float horizontalSpeed;
     private float verticalSpeed;
 
-    // 用来平滑输入的新变量
+    // 用来平滑输入的变量
     private float smoothX;
     private float smoothZ;
     private float currentVelocityX;
@@ -31,7 +31,6 @@ public class PlayerController : NetworkBehaviour
     // 控制变量
     private float moveSpeed = 2f;
     public bool isAiming = false;
-    
 
     // 地面检测变量
     private bool isGrounded;
@@ -52,7 +51,7 @@ public class PlayerController : NetworkBehaviour
     public GameObject cameraFollowPoint;
     public CinemachineVirtualCamera virtualCamera;
     private Vector3 cameraOriginPosition;
-
+    private Vector3 cameratatrgetPosition;
 
     void Start()
     {
@@ -62,10 +61,13 @@ public class PlayerController : NetworkBehaviour
         nowState = PlayerMovingState.Walking;
         gunFirePrefab.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         cameraOriginPosition = cameraFollowPoint.transform.localPosition;
+        cameratatrgetPosition = cameraOriginPosition + new Vector3(0f, 0f, 0.2f);
     }
 
     void Update()
     {
+        Debug.Log(cameraOriginPosition);
+        Debug.Log(cameratatrgetPosition);
         //设置不同状态速度
         CalculateMovementSpeed();
 
@@ -128,10 +130,15 @@ public class PlayerController : NetworkBehaviour
     {
         if (context.performed)
         {
-            if(isGrounded)
+            if (isGrounded && nowState != PlayerMovingState.Courching)
             {
                 playerAnimator.SetTrigger("Jump_trigger");
                 rb.AddForce(Vector3.up * 4f, ForceMode.Impulse);
+            }
+            else if (isGrounded && nowState == PlayerMovingState.Courching) 
+            {
+                nowState = PlayerMovingState.Walking;
+                playerAnimator.SetBool("IsCourching", false);
             }
         }
     }
@@ -153,12 +160,15 @@ public class PlayerController : NetworkBehaviour
         //瞄准时相机向前偏移
         if (context.performed) 
         {
-            StartCoroutine(MovingCameraInAiming());
+            StopCoroutine(MovingCameraBack());
+            StartCoroutine(MovingCameraForward());
+            cameraFollowPoint.transform.localPosition = cameratatrgetPosition;
         }
         //取消瞄准时相机回到原位
-        else if (context.canceled)
+       else if (context.canceled)
         {
-            StopCoroutine(MovingCameraInAiming());
+            StopCoroutine(MovingCameraForward());
+            StartCoroutine(MovingCameraBack());
             cameraFollowPoint.transform.localPosition = cameraOriginPosition;
         }
     }
@@ -204,14 +214,12 @@ public class PlayerController : NetworkBehaviour
             // 处理射击命中逻辑
         }
     }
-    IEnumerator MovingCameraInAiming() 
+    IEnumerator MovingCameraForward()
     {
-        Vector3 targetPosition = virtualCamera.transform.position + Vector3.forward * 1f;
-        while (Vector3.Distance(cameraFollowPoint.transform.localPosition, targetPosition) > 0.001f) 
-        {
-            cameraFollowPoint.transform.localPosition = Vector3.Lerp(cameraFollowPoint.transform.localPosition, targetPosition, Time.deltaTime * 5f);
-            yield return null;
-        }
-        cameraFollowPoint.transform.localPosition = targetPosition;
+        yield return null;
+    }
+    IEnumerator MovingCameraBack()
+    {
+        yield return null;
     }
 }

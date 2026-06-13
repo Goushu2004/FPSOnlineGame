@@ -1,15 +1,18 @@
 using UnityEngine;
 using Unity.Netcode;
 using Cinemachine;
+using System.Collections;
 
 public class CameraController : MonoBehaviour
 {
 
     [SerializeField] private CinemachineVirtualCamera virtualCamera;
+    private Vector3 cameraOriginPosition;
+    private Vector3 cameraTargetPosition;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-       
+
     }
 
     // Update is called once per frame
